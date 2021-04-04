@@ -1,7 +1,10 @@
 Generate an ical file from the recycleapp.be API
 
 ```bash
-./recycleapp-ics -zipcode "your zip code" -street "your street name" -house "your house number" > cal.ics
+./recycleapp-ics \
+  -zipcode "your zip code" \
+  -street "your street name" \
+  -house "your house number" > cal.ics
 ```
 
 Example:
