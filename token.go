@@ -23,7 +23,10 @@ func getToken() (*RecycleToken, error) {
 
 	log.Printf("Fetching access token from %#v", url)
 
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	req.Header.Set("x-consumer", consumer)
 	req.Header.Set("x-secret", secret)
@@ -93,7 +96,10 @@ func getMainPage() (string, error) {
 }
 
 func getPage(url string) (string, error) {
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
 
 	r, err := myClient.Do(req)
 	if err != nil {

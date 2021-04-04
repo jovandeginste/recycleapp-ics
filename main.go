@@ -108,8 +108,11 @@ func main() {
 	fmt.Println(cal.Serialize())
 }
 
-func getJSON(url string, token string, target interface{}) error {
-	req, _ := http.NewRequest("GET", url, nil)
+func getJSON(fullURL string, token string, target interface{}) error {
+	req, err := http.NewRequest("GET", fullURL, nil)
+	if err != nil {
+		return err
+	}
 
 	req.Header.Set("x-consumer", consumer)
 	req.Header.Set("Authorization", token)

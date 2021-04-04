@@ -8,6 +8,8 @@ import (
 	ics "github.com/arran4/golang-ical"
 )
 
+const collectionType = "collection"
+
 type RecycleInfo struct {
 	Items []RecycleItem `json:"items"`
 	Page  int           `json:"page"`
@@ -43,7 +45,7 @@ type RecycleException struct {
 }
 
 func (r *RecycleItem) IsCollection() bool {
-	if r.Type != "collection" {
+	if r.Type != collectionType {
 		return false
 	}
 
@@ -61,11 +63,11 @@ func (r *RecycleItem) FractionName(lang string) string {
 }
 
 func (r *RecycleException) Type() string {
-	if r.ReplacedBy.Type == "collection" {
+	if r.ReplacedBy.Type == collectionType {
 		return "replaced_by"
 	}
 
-	if r.Replaces.Type == "collection" {
+	if r.Replaces.Type == collectionType {
 		return "replaces"
 	}
 
@@ -73,11 +75,7 @@ func (r *RecycleException) Type() string {
 }
 
 func (r *RecycleException) IsCollection() bool {
-	if r.Type() == "replaced_by" {
-		return false
-	}
-
-	return true
+	return r.Type() != "replaced_by"
 }
 
 func (r *RecycleInfo) ToCalendar(org string) *ics.Calendar {

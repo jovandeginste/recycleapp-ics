@@ -35,7 +35,7 @@ func getOrganization(zipcode string, token string) (string, error) {
 	}
 
 	if result.Name == "" {
-		return "", fmt.Errorf("%w: %d", ErrOrganizationNoResult, zipcode)
+		return "", fmt.Errorf("%w: %s", ErrOrganizationNoResult, zipcode)
 	}
 
 	log.Printf("Organization is: %#v", result.Name)
