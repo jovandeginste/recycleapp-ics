@@ -116,6 +116,8 @@ func (r *RecycleItem) ToEvent(org string) goics.Componenter {
 	k, v := goics.FormatDateField("DTSTART", r.Timestamp)
 	s.AddProperty(k, v)
 
+	s.AddProperty("COLOR", r.Fraction.Color)
+	s.AddProperty("TRANSP", "TRANSPARENT")
 	s.AddProperty("SUMMARY", r.FractionName(lang))
 	s.AddProperty("ORGANIZER", org)
 	s.AddProperty("TZID", "Europe/Brussels")
