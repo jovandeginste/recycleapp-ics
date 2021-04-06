@@ -5,40 +5,36 @@ import (
 	"log"
 )
 
-type OrganizationsResponse struct {
-	Name        string `json:"name"`
-	Description struct {
-		Nl string `json:"nl"`
-		Fr string `json:"fr"`
-		En string `json:"en"`
-		De string `json:"de"`
-	} `json:"description"`
-	URL struct {
-		Nl string `json:"nl"`
-		Fr string `json:"fr"`
-		En string `json:"en"`
-		De string `json:"de"`
-	} `json:"url"`
+type Organization struct {
+	Name        string            `json:"name"`
+	URL         map[string]string `json:"url"`
+	Description map[string]string `json:"description"`
 }
 
-// https://recycleapp.be/api/app/v1/organisations/3110-24094
+func (r *Organization) URLForLanguage(lang string) string {
+	if u, ok := r.URL[lang]; ok {
+		return u
+	}
 
-func getOrganization(zipcode string, token string) (string, error) {
+	return "???"
+}
+
+func getOrganization(zipcode string, token string) (*Organization, error) {
 	fullURL := organisationsURL + zipcode
 
 	log.Printf("Fetching %#v", fullURL)
 
-	var result OrganizationsResponse
+	var result Organization
 
 	if err := getJSON(fullURL, token, &result); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if result.Name == "" {
-		return "", fmt.Errorf("%w: %s", ErrOrganizationNoResult, zipcode)
+		return nil, fmt.Errorf("%w: %s", ErrOrganizationNoResult, zipcode)
 	}
 
 	log.Printf("Organization is: %#v", result.Name)
 
-	return result.Name, nil
+	return &result, nil
 }

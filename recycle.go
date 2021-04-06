@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -19,7 +18,7 @@ type RecycleInfo struct {
 	Last  string        `json:"last"`
 	First string        `json:"first"`
 
-	Org string
+	Org *Organization
 }
 
 type RecycleItem struct {
@@ -58,8 +57,6 @@ func (r *RecycleItem) FractionName(lang string) string {
 	if name, ok := r.Fraction.Name[lang]; ok {
 		return name
 	}
-
-	fmt.Printf("%#v\n", r)
 
 	return "???"
 }
@@ -100,7 +97,7 @@ func (r RecycleInfo) EmitICal() goics.Componenter {
 	return cal
 }
 
-func (r *RecycleItem) ToEvent(org string) goics.Componenter {
+func (r *RecycleItem) ToEvent(org *Organization) goics.Componenter {
 	if !r.IsCollection() {
 		return nil
 	}
@@ -119,7 +116,7 @@ func (r *RecycleItem) ToEvent(org string) goics.Componenter {
 	s.AddProperty("COLOR", r.Fraction.Color)
 	s.AddProperty("TRANSP", "TRANSPARENT")
 	s.AddProperty("SUMMARY", r.FractionName(lang))
-	s.AddProperty("ORGANIZER", org)
+	s.AddProperty("ORGANIZER;CN="+org.Name, "nomail")
 	s.AddProperty("TZID", "Europe/Brussels")
 
 	s.AddComponent(r.Alarm())
