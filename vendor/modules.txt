@@ -1,5 +1,5 @@
 # github.com/arran4/golang-ical v0.0.0-20210113030058-c451667b5431
 ## explicit
-github.com/arran4/golang-ical
-# github.com/jinzhu/now v1.1.2
+# github.com/jordic/goics v0.0.0-20210404174824-5a0337b716a0
 ## explicit
+github.com/jordic/goics

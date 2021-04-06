@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -10,6 +11,8 @@ import (
 	"net/url"
 	"regexp"
 	"time"
+
+	"github.com/jordic/goics"
 )
 
 const (
@@ -103,9 +106,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	cal := result.ToCalendar(org)
+	result.Org = org
 
-	fmt.Println(cal.Serialize())
+	b := bytes.Buffer{}
+
+	goics.NewICalEncode(&b).Encode(result)
+
+	fmt.Println(b.String())
 }
 
 func getJSON(fullURL string, token string, target interface{}) error {

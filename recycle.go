@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	ics "github.com/arran4/golang-ical"
+	"github.com/jordic/goics"
 )
 
 const collectionType = "collection"
@@ -18,6 +18,8 @@ type RecycleInfo struct {
 	Self  string        `json:"self"`
 	Last  string        `json:"last"`
 	First string        `json:"first"`
+
+	Org string
 }
 
 type RecycleItem struct {
@@ -78,30 +80,63 @@ func (r *RecycleException) IsCollection() bool {
 	return r.Type() != "replaced_by"
 }
 
-func (r *RecycleInfo) ToCalendar(org string) *ics.Calendar {
+func (r RecycleInfo) EmitICal() goics.Componenter {
 	log.Printf("Items: %d", len(r.Items))
 
-	cal := ics.NewCalendar()
-	cal.SetMethod(ics.MethodRequest)
+	cal := goics.NewComponent()
+
+	cal.SetType("VCALENDAR")
+	cal.AddProperty("VERSION", "2.0")
+	cal.AddProperty("PRODID", "-//Recycling calendar")
+	cal.AddProperty("METHOD", "REQUEST")
 
 	for _, i := range r.Items {
-		i.AddToCalendar(cal, org)
+		e := i.ToEvent(r.Org)
+		if e != nil {
+			cal.AddComponent(e)
+		}
 	}
 
 	return cal
 }
 
-func (r *RecycleItem) AddToCalendar(cal *ics.Calendar, org string) {
+func (r *RecycleItem) ToEvent(org string) goics.Componenter {
 	if !r.IsCollection() {
-		return
+		return nil
 	}
 
-	event := cal.AddEvent(r.ID)
-	event.SetCreatedTime(r.Fraction.CreatedAt)
-	event.SetDtStampTime(r.Timestamp)
-	event.SetModifiedAt(r.Fraction.UpdatedAt)
-	event.SetStartAt(r.Timestamp)
-	event.SetEndAt(r.Timestamp)
-	event.SetSummary(r.FractionName(lang))
-	event.SetOrganizer(org)
+	s := goics.NewComponent()
+	s.SetType("VEVENT")
+	s.AddProperty("UID", r.ID)
+
+	AddDateTimeField(s, "LAST-MODIFIED", r.Fraction.UpdatedAt)
+	AddDateTimeField(s, "CREATED", r.Fraction.CreatedAt)
+	AddDateTimeField(s, "DTSTAMP", r.Timestamp)
+
+	k, v := goics.FormatDateField("DTSTART", r.Timestamp)
+	s.AddProperty(k, v)
+
+	s.AddProperty("SUMMARY", r.FractionName(lang))
+	s.AddProperty("ORGANIZER", org)
+	s.AddProperty("TZID", "Europe/Brussels")
+
+	s.AddComponent(r.Alarm())
+
+	return s
+}
+
+func (r *RecycleItem) Alarm() goics.Componenter {
+	s := goics.NewComponent()
+
+	s.SetType("VALARM")
+	s.AddProperty("TRIGGER;RELATED=START", "-PT6H")
+	s.AddProperty("ACTION", "DISPLAY")
+	s.AddProperty("DESCRIPTION", r.FractionName(lang))
+
+	return s
+}
+
+func AddDateTimeField(cal goics.Componenter, name string, t time.Time) {
+	k, v := goics.FormatDateTime(name, t)
+	cal.AddProperty(k, v)
 }
