@@ -20,7 +20,7 @@ func (r *Organization) URLForLanguage(lang string) string {
 }
 
 func getOrganization(zipcode string, token string) (*Organization, error) {
-	fullURL := organisationsURL + zipcode
+	fullURL := organizationsURL + zipcode
 
 	log.Printf("Fetching %#v", fullURL)
 

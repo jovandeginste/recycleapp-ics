@@ -24,7 +24,7 @@ const (
 	collectionsURL   = APIURL + "collections"
 	streetsURL       = APIURL + "streets"
 	zipcodesURL      = APIURL + "zipcodes"
-	organisationsURL = APIURL + "organisations/"
+	organizationsURL = APIURL + "organizations/"
 )
 
 var (
