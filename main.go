@@ -46,19 +46,19 @@ func main() {
 		err                  error
 		zipcode, houseNumber int
 		street               string
+		year                 int
 	)
-
-	year := time.Now().Year()
-
-	fromDate := fmt.Sprintf("%d-01-01", year)
-	untilDate := fmt.Sprintf("%d-12-31", year)
-	size := "200"
 
 	flag.StringVar(&lang, "lang", "nl", "your language (nl, fr, en, de)")
 	flag.IntVar(&zipcode, "zipcode", 0, "your zip code")
 	flag.StringVar(&street, "street", "", "your street name")
 	flag.IntVar(&houseNumber, "house", 0, "your house number (digits only)")
+	flag.IntVar(&year, "year", time.Now().Year(), "the year")
 	flag.Parse()
+
+	fromDate := fmt.Sprintf("%d-01-01", year)
+	untilDate := fmt.Sprintf("%d-12-31", year)
+	size := "200"
 
 	localLocation, err = time.LoadLocation("Local")
 	if err != nil {
