@@ -116,7 +116,7 @@ func main() {
 }
 
 func getJSON(fullURL string, token string, target interface{}) error {
-	req, err := http.NewRequest("GET", fullURL, nil)
+	req, err := http.NewRequest(http.MethodGet, fullURL, nil)
 	if err != nil {
 		return err
 	}
