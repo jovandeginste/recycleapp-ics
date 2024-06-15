@@ -33,7 +33,7 @@ var (
 	lang          string
 	localLocation *time.Location
 	jsRegexp      = regexp.MustCompile(`src="(/static/js/main.[[:alnum:]]*\.chunk\.js)"`)
-	secretRegexp  = regexp.MustCompile(`n="([^"]+)",r="/assets/"`)
+	secretRegexp  = regexp.MustCompile(`var n="([^"]+)",r="`)
 
 	ErrNoJSMatch            = errors.New("main page did not contain the expected main js url")
 	ErrZipcodeNoResult      = errors.New("zipcode query returned nothing")
