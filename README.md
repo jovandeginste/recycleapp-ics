@@ -20,13 +20,14 @@ Run the compiled binary with your details:
 ./recycleapp-ics \
   --zipcode "your zip code" \
   --street "your street name" \
-  --house "your house number" > cal.ics
+  --house "your house number" \
+  --format ics > cal.ics
 ```
 
 ### Example:
 
 ```bash
-./recycleapp-ics --zipcode 1000 --street "Nieuwstraat" --house 1 > cal.ics
+./recycleapp-ics --zipcode 1000 --street "Nieuwstraat" --house 1 --format ics > cal.ics
 ```
 
 ### Optional parameters:

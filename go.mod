@@ -1,6 +1,6 @@
 module github.com/jovandeginste/recycleapp-ics
 
-go 1.23
+go 1.26
 
 require (
 	github.com/hashicorp/go-retryablehttp v0.7.8
