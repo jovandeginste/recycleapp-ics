@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
 	"strconv"
 )
@@ -18,7 +18,7 @@ func (r *Organization) URLForLanguage(lang string) string {
 func getOrganization(zipcode string) (*Organization, error) {
 	fullURL := organizationsURL + zipcode
 
-	log.Printf("Fetching %#v", fullURL)
+	slog.Info("Fetching URL", "url", fullURL)
 
 	var result Organization
 
@@ -30,7 +30,7 @@ func getOrganization(zipcode string) (*Organization, error) {
 		return nil, fmt.Errorf("%w: %s", ErrOrganizationNoResult, zipcode)
 	}
 
-	log.Printf("Organization is: %#v", result.Name)
+	slog.Info("Organization detail", "name", result.Name)
 
 	return &result, nil
 }
@@ -41,7 +41,7 @@ func getStreetID(zipcode, street string) (string, error) {
 	v.Set("q", street)
 	v.Set("zipcodes", zipcode)
 
-	log.Printf("Fetching %#v with: %v", streetsURL, v)
+	slog.Info("Fetching streets", "url", streetsURL, "values", v)
 
 	fullURL := streetsURL + "?" + v.Encode()
 
@@ -59,7 +59,7 @@ func getStreetID(zipcode, street string) (string, error) {
 		return "", fmt.Errorf("%w: zipcode=%#v street=%#v", ErrStreetNoResult, zipcode, street)
 	}
 
-	log.Printf("Street ID is: %#v", result.Items[0].ID)
+	slog.Info("Street ID details", "id", result.Items[0].ID)
 
 	return result.Items[0].ID, nil
 }
@@ -69,7 +69,7 @@ func getZipcodeID(zipcode int) (string, error) {
 
 	v.Set("q", strconv.Itoa(zipcode))
 
-	log.Printf("Fetching %#v with: %v", zipcodesURL, v)
+	slog.Info("Fetching zipcodes", "url", zipcodesURL, "values", v)
 
 	fullURL := zipcodesURL + "?" + v.Encode()
 
@@ -87,7 +87,7 @@ func getZipcodeID(zipcode int) (string, error) {
 		return "", fmt.Errorf("%w: %d", ErrZipcodeNoResult, zipcode)
 	}
 
-	log.Printf("Zipcode ID is: %#v", result.Items[0].ID)
+	slog.Info("Zipcode ID details", "id", result.Items[0].ID)
 
 	return result.Items[0].ID, nil
 }

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/jordic/goics"
@@ -78,7 +78,7 @@ func (r *RecycleException) IsCollection() bool {
 }
 
 func (r RecycleInfo) EmitICal() goics.Componenter {
-	log.Printf("Items: %d", len(r.Items))
+	slog.Info("Emitting calendar", "item_count", len(r.Items))
 
 	cal := goics.NewComponent()
 

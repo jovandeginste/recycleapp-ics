@@ -1,3 +1,12 @@
+# github.com/inconshreveable/mousetrap v1.1.0
+## explicit; go 1.18
+github.com/inconshreveable/mousetrap
 # github.com/jordic/goics v0.0.0-20210404174824-5a0337b716a0
 ## explicit; go 1.14
 github.com/jordic/goics
+# github.com/spf13/cobra v1.10.2
+## explicit; go 1.15
+github.com/spf13/cobra
+# github.com/spf13/pflag v1.0.9
+## explicit; go 1.12
+github.com/spf13/pflag

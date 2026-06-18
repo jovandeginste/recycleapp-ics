@@ -4,14 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/jordic/goics"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -40,64 +42,76 @@ var (
 
 func main() {
 	var (
-		err                  error
 		zipcode, houseNumber int
 		street               string
 		year                 int
 	)
 
-	flag.StringVar(&lang, "lang", "nl", "your language (nl, fr, en, de)")
-	flag.IntVar(&zipcode, "zipcode", 0, "your zip code")
-	flag.StringVar(&street, "street", "", "your street name")
-	flag.IntVar(&houseNumber, "house", 0, "your house number (digits only)")
-	flag.IntVar(&year, "year", time.Now().Year(), "the year")
-	flag.Parse()
+	rootCmd := &cobra.Command{
+		Use:   "recycleapp-ics",
+		Short: "Generate iCalendar (ICS) files for the recycleapp.be garbage collection schedule",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fromDate := fmt.Sprintf("%d-01-01", year)
+			untilDate := fmt.Sprintf("%d-12-31", year)
+			size := "200"
 
-	fromDate := fmt.Sprintf("%d-01-01", year)
-	untilDate := fmt.Sprintf("%d-12-31", year)
-	size := "200"
+			zipcodeID, err := getZipcodeID(zipcode)
+			if err != nil {
+				return err
+			}
 
-	zipcodeID, err := getZipcodeID(zipcode)
-	if err != nil {
-		log.Fatal(err)
+			org, err := getOrganization(zipcodeID)
+			if err != nil {
+				return err
+			}
+
+			streetID, err := getStreetID(zipcodeID, street)
+			if err != nil {
+				return err
+			}
+
+			v := url.Values{}
+			v.Set("zipcodeId", zipcodeID)
+			v.Set("streetId", streetID)
+			v.Set("houseNumber", strconv.Itoa(houseNumber))
+			v.Set("fromDate", fromDate)
+			v.Set("untilDate", untilDate)
+			v.Set("size", size)
+
+			slog.Info("Fetching collections", "url", collectionsURL, "values", v)
+
+			fullURL := collectionsURL + "?" + v.Encode()
+
+			var result RecycleInfo
+			if err := getJSON(fullURL, &result); err != nil {
+				return err
+			}
+
+			result.Org = org
+
+			b := bytes.Buffer{}
+			goics.NewICalEncode(&b).Encode(result)
+
+			fmt.Println(b.String())
+			return nil
+		},
 	}
 
-	org, err := getOrganization(zipcodeID)
-	if err != nil {
-		log.Fatal(err)
+	rootCmd.Flags().StringVar(&lang, "lang", "nl", "your language (nl, fr, en, de)")
+	rootCmd.Flags().IntVar(&zipcode, "zipcode", 0, "your zip code")
+	rootCmd.Flags().StringVar(&street, "street", "", "your street name")
+	rootCmd.Flags().IntVar(&houseNumber, "house", 0, "your house number (digits only)")
+	rootCmd.Flags().IntVar(&year, "year", time.Now().Year(), "the year")
+
+	// Make mandatory flags required (if appropriate, otherwise keep optional)
+	_ = rootCmd.MarkFlagRequired("zipcode")
+	_ = rootCmd.MarkFlagRequired("street")
+	_ = rootCmd.MarkFlagRequired("house")
+
+	if err := rootCmd.Execute(); err != nil {
+		slog.Error("Execution failed", "error", err)
+		os.Exit(1)
 	}
-
-	streetID, err := getStreetID(zipcodeID, street)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	v := url.Values{}
-
-	v.Set("zipcodeId", zipcodeID)
-	v.Set("streetId", streetID)
-	v.Set("houseNumber", fmt.Sprintf("%d", houseNumber))
-	v.Set("fromDate", fromDate)
-	v.Set("untilDate", untilDate)
-	v.Set("size", size)
-
-	log.Printf("Fetching %#v with:\n%v", collectionsURL, v)
-
-	fullURL := collectionsURL + "?" + v.Encode()
-
-	var result RecycleInfo
-
-	if err := getJSON(fullURL, &result); err != nil {
-		log.Fatal(err)
-	}
-
-	result.Org = org
-
-	b := bytes.Buffer{}
-
-	goics.NewICalEncode(&b).Encode(result)
-
-	fmt.Println(b.String())
 }
 
 func getJSON(fullURL string, target any) error {
