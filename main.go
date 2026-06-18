@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/jordic/goics"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +31,12 @@ var (
 )
 
 var (
-	myClient = &http.Client{Timeout: 10 * time.Second}
+	myClient = func() *http.Client {
+		client := retryablehttp.NewClient()
+		client.RetryMax = 4
+		client.Logger = slogLeveledLogger{}
+		return client.StandardClient()
+	}()
 
 	lang string
 
@@ -129,4 +135,22 @@ func getJSON(fullURL string, target any) error {
 	defer r.Body.Close()
 
 	return json.NewDecoder(r.Body).Decode(target)
+}
+
+type slogLeveledLogger struct{}
+
+func (s slogLeveledLogger) Error(msg string, keysAndValues ...any) {
+	slog.Error(msg, keysAndValues...)
+}
+
+func (s slogLeveledLogger) Info(msg string, keysAndValues ...any) {
+	slog.Info(msg, keysAndValues...)
+}
+
+func (s slogLeveledLogger) Debug(msg string, keysAndValues ...any) {
+	slog.Debug(msg, keysAndValues...)
+}
+
+func (s slogLeveledLogger) Warn(msg string, keysAndValues ...any) {
+	slog.Warn(msg, keysAndValues...)
 }
