@@ -38,7 +38,7 @@ jobs:
           if [ "${{ matrix.goos }}" = "windows" ]; then
             BINARY_NAME="recycleapp-ics.exe"
           fi
-          go build -v -o "dist/${BINARY_NAME}-${{ matrix.goos }}-${{ matrix.goarch }}" .
+          go build -v -o "dist/${BINARY_NAME}-${{ matrix.goos }}-${{ matrix.goarch }}" ./cmd/recycleapp-ics
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
