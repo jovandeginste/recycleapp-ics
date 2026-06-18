@@ -9,31 +9,28 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"regexp"
 	"time"
 
 	"github.com/jordic/goics"
 )
 
 const (
-	consumer         = "recycleapp.be"
-	baseURL          = "https://" + consumer + "/"
-	calendarURL      = baseURL + "calendar"
-	APIURL           = baseURL + "api/app/v1/"
-	tokenURL         = APIURL + "access-token"
-	collectionsURL   = APIURL + "collections"
-	streetsURL       = APIURL + "streets"
-	zipcodesURL      = APIURL + "zipcodes"
-	organizationsURL = APIURL + "organizations/"
+	consumer = "recycleapp.be"
+	baseURL  = "https://api.fostplus.be/recyclecms/public/v1"
+)
+
+//nolint:errcheck
+var (
+	collectionsURL, _   = url.JoinPath(baseURL, "collections")
+	streetsURL, _       = url.JoinPath(baseURL, "streets")
+	zipcodesURL, _      = url.JoinPath(baseURL, "zipcodes")
+	organizationsURL, _ = url.JoinPath(baseURL, "organizations/")
 )
 
 var (
 	myClient = &http.Client{Timeout: 10 * time.Second}
 
-	lang          string
-	localLocation *time.Location
-	jsRegexp      = regexp.MustCompile(`src="(/static/js/main.[[:alnum:]]*\.chunk\.js)"`)
-	secretRegexp  = regexp.MustCompile(`var n="([^"]+)",r="`)
+	lang string
 
 	ErrNoJSMatch            = errors.New("main page did not contain the expected main js url")
 	ErrZipcodeNoResult      = errors.New("zipcode query returned nothing")
@@ -60,29 +57,17 @@ func main() {
 	untilDate := fmt.Sprintf("%d-12-31", year)
 	size := "200"
 
-	localLocation, err = time.LoadLocation("Local")
-	if err != nil {
-		log.Fatal(`Failed to load location "Local"`)
-	}
-
-	authorizationToken, err := getToken()
+	zipcodeID, err := getZipcodeID(zipcode)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	token := authorizationToken.AccessToken
-
-	zipcodeID, err := getZipcodeID(zipcode, token)
+	org, err := getOrganization(zipcodeID)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	org, err := getOrganization(zipcodeID, token)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	streetID, err := getStreetID(zipcodeID, street, token)
+	streetID, err := getStreetID(zipcodeID, street)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -102,7 +87,7 @@ func main() {
 
 	var result RecycleInfo
 
-	if err := getJSON(fullURL, token, &result); err != nil {
+	if err := getJSON(fullURL, &result); err != nil {
 		log.Fatal(err)
 	}
 
@@ -115,14 +100,13 @@ func main() {
 	fmt.Println(b.String())
 }
 
-func getJSON(fullURL string, token string, target interface{}) error {
+func getJSON(fullURL string, target any) error {
 	req, err := http.NewRequest(http.MethodGet, fullURL, nil)
 	if err != nil {
 		return err
 	}
 
 	req.Header.Set("x-consumer", consumer)
-	req.Header.Set("Authorization", token)
 
 	r, err := myClient.Do(req)
 	if err != nil {
