@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -198,6 +199,63 @@ func TestEmitICal(t *testing.T) {
 	for _, sub := range expectedSubstrings {
 		if !strings.Contains(gotStr, sub) {
 			t.Errorf("expected calendar ICS to contain %q, but it didn't. Got:\n%s", sub, gotStr)
+		}
+	}
+}
+
+func TestRecycleInfoJSON(t *testing.T) {
+	oldLang := lang
+	lang = "nl"
+	defer func() { lang = oldLang }()
+
+	now := time.Date(2026, 6, 18, 12, 0, 0, 0, time.UTC)
+	info := RecycleInfo{
+		Org: &Organization{
+			Name: "TestOrg",
+		},
+		Items: []RecycleItem{
+			{
+				ID:        "item-abc",
+				Type:      "collection",
+				Timestamp: now,
+				Fraction: RecycleFraction{
+					Name:      map[string]string{"nl": "Glas"},
+					Color:     "green",
+					CreatedAt: now,
+					UpdatedAt: now,
+				},
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(info.ToJSONEvents())
+	if err != nil {
+		t.Fatalf("failed to marshal JSONEvents to JSON: %v", err)
+	}
+
+	gotStr := string(jsonData)
+	expectedSubstrings := []string{
+		`"summary":"Glas"`,
+		`"date":"2026-06-18"`,
+		`"color":"green"`,
+	}
+
+	for _, sub := range expectedSubstrings {
+		if !strings.Contains(gotStr, sub) {
+			t.Errorf("expected JSON to contain %q, but it didn't. Got:\n%s", sub, gotStr)
+		}
+	}
+
+	unexpectedSubstrings := []string{
+		`"uid"`,
+		`"organizer"`,
+		`"created"`,
+		`"last_modified"`,
+	}
+
+	for _, sub := range unexpectedSubstrings {
+		if strings.Contains(gotStr, sub) {
+			t.Errorf("expected JSON to NOT contain %q, but it did. Got:\n%s", sub, gotStr)
 		}
 	}
 }

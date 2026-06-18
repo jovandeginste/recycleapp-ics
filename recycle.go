@@ -18,7 +18,28 @@ type RecycleInfo struct {
 	Last  string        `json:"last"`
 	First string        `json:"first"`
 
-	Org *Organization
+	Org *Organization `json:"org,omitempty"`
+}
+
+type JSONEvent struct {
+	Summary string `json:"summary"`
+	Date    string `json:"date"`
+	Color   string `json:"color"`
+}
+
+func (r RecycleInfo) ToJSONEvents() []JSONEvent {
+	events := []JSONEvent{}
+	for _, i := range r.Items {
+		if !i.IsCollection() {
+			continue
+		}
+		events = append(events, JSONEvent{
+			Summary: i.FractionName(lang),
+			Date:    i.Timestamp.Format("2006-01-02"),
+			Color:   i.Fraction.Color,
+		})
+	}
+	return events
 }
 
 type RecycleItem struct {

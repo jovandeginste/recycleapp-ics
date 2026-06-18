@@ -51,12 +51,17 @@ func main() {
 		zipcode, houseNumber int
 		street               string
 		year                 int
+		format               string
 	)
 
 	rootCmd := &cobra.Command{
 		Use:   "recycleapp-ics",
 		Short: "Generate iCalendar (ICS) files for the recycleapp.be garbage collection schedule",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if format != "json" && format != "ics" {
+				return fmt.Errorf("invalid format %q, must be either 'json' or 'ics'", format)
+			}
+
 			fromDate := fmt.Sprintf("%d-01-01", year)
 			untilDate := fmt.Sprintf("%d-12-31", year)
 			size := "200"
@@ -95,10 +100,17 @@ func main() {
 
 			result.Org = org
 
-			b := bytes.Buffer{}
-			goics.NewICalEncode(&b).Encode(result)
-
-			fmt.Println(b.String())
+			if format == "json" {
+				jsonData, err := json.MarshalIndent(result.ToJSONEvents(), "", "  ")
+				if err != nil {
+					return err
+				}
+				fmt.Println(string(jsonData))
+			} else {
+				b := bytes.Buffer{}
+				goics.NewICalEncode(&b).Encode(result)
+				fmt.Println(b.String())
+			}
 			return nil
 		},
 	}
@@ -108,6 +120,7 @@ func main() {
 	rootCmd.Flags().StringVar(&street, "street", "", "your street name")
 	rootCmd.Flags().IntVar(&houseNumber, "house", 0, "your house number (digits only)")
 	rootCmd.Flags().IntVar(&year, "year", time.Now().Year(), "the year")
+	rootCmd.Flags().StringVar(&format, "format", "json", "output format (json, ics)")
 
 	// Make mandatory flags required (if appropriate, otherwise keep optional)
 	_ = rootCmd.MarkFlagRequired("zipcode")
