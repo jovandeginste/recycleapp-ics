@@ -1,6 +1,6 @@
 BINARY_NAME=recycleapp-ics
 
-.PHONY: all build test lint fmt clean run help
+.PHONY: all build test lint fmt clean run help deps
 
 all: lint test build
 
@@ -23,6 +23,11 @@ clean:
 	rm -f $(BINARY_NAME)
 	rm -rf dist
 
+deps:
+	go get -u ./...
+	go mod tidy
+	go mod vendor
+
 help:
 	@echo "Available targets:"
 	@echo "  build   - Build the binary"
@@ -31,4 +36,5 @@ help:
 	@echo "  lint    - Run golangci-lint"
 	@echo "  fmt     - Format Go source code"
 	@echo "  clean   - Remove binary and build artifacts"
+	@echo "  deps    - Update Go modules and vendor dependencies"
 	@echo "  help    - Display this help message"
