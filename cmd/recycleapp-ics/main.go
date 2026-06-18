@@ -3,31 +3,17 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/jordic/goics"
 	"github.com/spf13/cobra"
-)
 
-const (
-	consumer = "recycleapp.be"
-	baseURL  = "https://api.fostplus.be/recyclecms/public/v1"
-)
-
-//nolint:errcheck
-var (
-	collectionsURL, _   = url.JoinPath(baseURL, "collections")
-	streetsURL, _       = url.JoinPath(baseURL, "streets")
-	zipcodesURL, _      = url.JoinPath(baseURL, "zipcodes")
-	organizationsURL, _ = url.JoinPath(baseURL, "organizations/")
+	"github.com/jovandeginste/recycleapp-ics/pkg/recycleapp"
 )
 
 var (
@@ -37,13 +23,6 @@ var (
 		client.Logger = slogLeveledLogger{}
 		return client.StandardClient()
 	}()
-
-	lang string
-
-	ErrNoJSMatch            = errors.New("main page did not contain the expected main js url")
-	ErrZipcodeNoResult      = errors.New("zipcode query returned nothing")
-	ErrStreetNoResult       = errors.New("street query returned nothing")
-	ErrOrganizationNoResult = errors.New("organization query returned nothing")
 )
 
 func main() {
@@ -52,6 +31,7 @@ func main() {
 		street               string
 		year                 int
 		format               string
+		lang                 string
 	)
 
 	rootCmd := &cobra.Command{
@@ -64,37 +44,34 @@ func main() {
 
 			fromDate := fmt.Sprintf("%d-01-01", year)
 			untilDate := fmt.Sprintf("%d-12-31", year)
-			size := "200"
 
-			zipcodeID, err := getZipcodeID(zipcode)
+			ctx := cmd.Context()
+			client := recycleapp.NewClient(myClient)
+
+			zipcodeID, err := client.GetZipcodeID(ctx, zipcode)
 			if err != nil {
 				return err
 			}
 
-			org, err := getOrganization(zipcodeID)
+			org, err := client.GetOrganization(ctx, zipcodeID)
 			if err != nil {
 				return err
 			}
 
-			streetID, err := getStreetID(zipcodeID, street)
+			streetID, err := client.GetStreetID(ctx, zipcodeID, street)
 			if err != nil {
 				return err
 			}
 
-			v := url.Values{}
-			v.Set("zipcodeId", zipcodeID)
-			v.Set("streetId", streetID)
-			v.Set("houseNumber", strconv.Itoa(houseNumber))
-			v.Set("fromDate", fromDate)
-			v.Set("untilDate", untilDate)
-			v.Set("size", size)
-
-			slog.Info("Fetching collections", "url", collectionsURL, "values", v)
-
-			fullURL := collectionsURL + "?" + v.Encode()
-
-			var result RecycleInfo
-			if err := getJSON(fullURL, &result); err != nil {
+			result, err := client.GetCollections(ctx, recycleapp.CollectionsParams{
+				ZipcodeID:   zipcodeID,
+				StreetID:    streetID,
+				HouseNumber: houseNumber,
+				FromDate:    fromDate,
+				UntilDate:   untilDate,
+				Lang:        lang,
+			})
+			if err != nil {
 				return err
 			}
 
@@ -131,23 +108,6 @@ func main() {
 		slog.Error("Execution failed", "error", err)
 		os.Exit(1)
 	}
-}
-
-func getJSON(fullURL string, target any) error {
-	req, err := http.NewRequest(http.MethodGet, fullURL, nil)
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("x-consumer", consumer)
-
-	r, err := myClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer r.Body.Close()
-
-	return json.NewDecoder(r.Body).Decode(target)
 }
 
 type slogLeveledLogger struct{}

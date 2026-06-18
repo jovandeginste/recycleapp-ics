@@ -1,4 +1,4 @@
-package main
+package recycleapp
 
 import (
 	"log/slog"
@@ -9,6 +9,40 @@ import (
 
 const collectionType = "collection"
 
+type Organization struct {
+	Name        string            `json:"name"`
+	URL         map[string]string `json:"url"`
+	Description map[string]string `json:"description"`
+}
+
+func (r *Organization) URLForLanguage(lang string) string {
+	if u, ok := r.URL[lang]; ok {
+		return u
+	}
+
+	return "???"
+}
+
+type StreetResponse struct {
+	Items []struct {
+		ID string `json:"id"`
+	} `json:"items"`
+	Total int `json:"total"`
+	Pages int `json:"pages"`
+	Page  int `json:"page"`
+	Size  int `json:"size"`
+}
+
+type ZipResponse struct {
+	Items []struct {
+		ID string `json:"id"`
+	} `json:"items"`
+	Total int `json:"total"`
+	Pages int `json:"pages"`
+	Page  int `json:"page"`
+	Size  int `json:"size"`
+}
+
 type RecycleInfo struct {
 	Items []RecycleItem `json:"items"`
 	Page  int           `json:"page"`
@@ -18,7 +52,8 @@ type RecycleInfo struct {
 	Last  string        `json:"last"`
 	First string        `json:"first"`
 
-	Org *Organization `json:"org,omitempty"`
+	Org  *Organization `json:"org,omitempty"`
+	Lang string        `json:"-"`
 }
 
 type JSONEvent struct {
@@ -34,7 +69,7 @@ func (r RecycleInfo) ToJSONEvents() []JSONEvent {
 			continue
 		}
 		events = append(events, JSONEvent{
-			Summary: i.FractionName(lang),
+			Summary: i.FractionName(r.Lang),
 			Date:    i.Timestamp.Format("2006-01-02"),
 			Color:   i.Fraction.Color,
 		})
@@ -109,7 +144,7 @@ func (r RecycleInfo) EmitICal() goics.Componenter {
 	cal.AddProperty("METHOD", "REQUEST")
 
 	for _, i := range r.Items {
-		e := i.ToEvent(r.Org)
+		e := i.ToEvent(r.Org, r.Lang)
 		if e != nil {
 			cal.AddComponent(e)
 		}
@@ -118,7 +153,7 @@ func (r RecycleInfo) EmitICal() goics.Componenter {
 	return cal
 }
 
-func (r *RecycleItem) ToEvent(org *Organization) goics.Componenter {
+func (r *RecycleItem) ToEvent(org *Organization, lang string) goics.Componenter {
 	if !r.IsCollection() {
 		return nil
 	}
@@ -137,15 +172,19 @@ func (r *RecycleItem) ToEvent(org *Organization) goics.Componenter {
 	s.AddProperty("COLOR", r.Fraction.Color)
 	s.AddProperty("TRANSP", "TRANSPARENT")
 	s.AddProperty("SUMMARY", r.FractionName(lang))
-	s.AddProperty("ORGANIZER;CN="+org.Name, "nomail")
+	if org != nil {
+		s.AddProperty("ORGANIZER;CN="+org.Name, "nomail")
+	} else {
+		s.AddProperty("ORGANIZER;CN=Unknown", "nomail")
+	}
 	s.AddProperty("TZID", "Europe/Brussels")
 
-	s.AddComponent(r.Alarm())
+	s.AddComponent(r.Alarm(lang))
 
 	return s
 }
 
-func (r *RecycleItem) Alarm() goics.Componenter {
+func (r *RecycleItem) Alarm(lang string) goics.Componenter {
 	s := goics.NewComponent()
 
 	s.SetType("VALARM")

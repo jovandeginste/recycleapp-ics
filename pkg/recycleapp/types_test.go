@@ -1,4 +1,4 @@
-package main
+package recycleapp
 
 import (
 	"bytes"
@@ -88,11 +88,6 @@ func TestFractionName(t *testing.T) {
 }
 
 func TestToEvent(t *testing.T) {
-	oldLang := lang
-	lang = "nl"
-
-	defer func() { lang = oldLang }()
-
 	org := &Organization{
 		Name: "TestOrg",
 	}
@@ -111,7 +106,7 @@ func TestToEvent(t *testing.T) {
 		},
 	}
 
-	evt := item.ToEvent(org)
+	evt := item.ToEvent(org, "nl")
 	if evt == nil {
 		t.Fatal("expected non-nil event")
 	}
@@ -145,17 +140,12 @@ func TestToEvent(t *testing.T) {
 	nonCollection := &RecycleItem{
 		Type: "other",
 	}
-	if evtNonCol := nonCollection.ToEvent(org); evtNonCol != nil {
+	if evtNonCol := nonCollection.ToEvent(org, "nl"); evtNonCol != nil {
 		t.Errorf("expected nil event for non-collection, got %v", evtNonCol)
 	}
 }
 
 func TestEmitICal(t *testing.T) {
-	oldLang := lang
-	lang = "nl"
-
-	defer func() { lang = oldLang }()
-
 	org := &Organization{
 		Name: "TestOrg",
 	}
@@ -163,7 +153,8 @@ func TestEmitICal(t *testing.T) {
 	now := time.Date(2026, 6, 18, 12, 0, 0, 0, time.UTC)
 
 	info := RecycleInfo{
-		Org: org,
+		Org:  org,
+		Lang: "nl",
 		Items: []RecycleItem{
 			{
 				ID:        "item-abc",
@@ -204,15 +195,12 @@ func TestEmitICal(t *testing.T) {
 }
 
 func TestRecycleInfoJSON(t *testing.T) {
-	oldLang := lang
-	lang = "nl"
-	defer func() { lang = oldLang }()
-
 	now := time.Date(2026, 6, 18, 12, 0, 0, 0, time.UTC)
 	info := RecycleInfo{
 		Org: &Organization{
 			Name: "TestOrg",
 		},
+		Lang: "nl",
 		Items: []RecycleItem{
 			{
 				ID:        "item-abc",
